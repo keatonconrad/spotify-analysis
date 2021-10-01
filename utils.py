@@ -227,6 +227,11 @@ def save_track_info(track, session, hit):
 
     song_exists = session.query(Song.id).filter_by(spotify_id=track['id']).first() is not None
 
+    if 'non_hit_df_index' in track:
+        non_hit_df_index = track['non_hit_df_index']
+    else:
+        non_hit_df_index = None
+
     song_data = {
         'spotify_id': track['id'],
         'isrc': isrc,
@@ -236,7 +241,8 @@ def save_track_info(track, session, hit):
         'year': track['album']['release_date'][:4],
         'explicit': track['explicit'],
         'hit': hit,
-        'current_popularity': track['popularity']
+        'current_popularity': track['popularity'],
+        'non_hit_df_index': non_hit_df_index
     }
 
     if not song_exists:

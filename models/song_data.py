@@ -30,6 +30,8 @@ class Song(BaseModel, Base):
     __tablename__ = 'song'
 
     id = db.Column(db.Integer(), primary_key=True)
+    non_hit_df_index = db.Column(db.Integer())
+
     artist_id = db.Column(db.Integer, ForeignKey('artist.id'))
 
     title = db.Column(db.Text())
