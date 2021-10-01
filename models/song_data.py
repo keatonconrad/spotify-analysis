@@ -70,7 +70,7 @@ class Artist(BaseModel):
 
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Text())
-    artist_id = db.Column(db.Text())
+    spotify_id = db.Column(db.Text())
     followers = db.Column(db.Integer())
     popularity = db.Column(db.Integer())
     primary_genre = db.Column(db.Text())

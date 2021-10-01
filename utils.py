@@ -6,6 +6,7 @@ import numpy as np
 from tensorflow.keras import backend as K
 import boto3
 import base64
+from models.song_data import Song, Artist
 
 stop_words = stopwords.words('english')
 
@@ -201,3 +202,35 @@ def get_aws_secret(secret_name, region_name):
         secret = base64.b64decode(get_secret_value_response['SecretBinary'])
 
     return secret
+
+
+def save_track_info(track, session, hit):
+    try:
+        isrc = track['external_ids']['isrc']
+    except KeyError:
+        isrc = None
+        
+    artist_data = {
+        'name': track['artists'][0]['name'],
+        'spotify_id': track['artists'][0]['id']
+    }
+
+    new_artist = Artist()
+    new_artist.update(artist_data)
+    new_artist.save_to_db(session)
+
+    song_data = {
+        'spotify_id': track['id'],
+        'isrc': isrc,
+        'artist_id': new_artist.id,
+        'title': track['name'],
+        'album': track['album']['name'],
+        'year': track['album']['release_date'][:4],
+        'explicit': track['explicit'],
+        'hit': hit,
+        'current_popularity': track['popularity']
+    }
+
+    new_song = Song()
+    new_song.update(song_data)
+    new_song.save_to_db(session)
