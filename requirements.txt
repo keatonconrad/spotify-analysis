@@ -1,0 +1,5 @@
+sqlalchemy
+lyricsgenius
+spotipy
+tqdm
+textblob
