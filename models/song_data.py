@@ -1,5 +1,6 @@
 import sqlalchemy as db, ForeignKey
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import relationship
+from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
@@ -15,13 +16,13 @@ class BaseModel(Base):
     def to_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-    def save_to_db(self):
-        db.session.add(self)
-        db.session.commit()
+    def save_to_db(self, session):
+        session.add(self)
+        session.commit()
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    def delete(self, session):
+        session.delete(self)
+        session.commit()
 
 
 class Song(BaseModel):
@@ -30,7 +31,7 @@ class Song(BaseModel):
     id = db.Column(db.Integer(), primary_key=True)
     artist_id = db.Column(db.Integer, ForeignKey('artist.id'))
 
-    song = db.Column(db.Text())
+    title = db.Column(db.Text())
     spotify_id = db.Column(db.Text())
     uri = db.Column(db.Text())
     isrc = db.Column(db.Text())
@@ -53,13 +54,15 @@ class Song(BaseModel):
     liveness = db.Column(db.Float())
     valence = db.Column(db.Float())
     tempo = db.Column(db.Float())
-    duration_ms = db.Column(db.Float())
+    duration_ms = db.Column(db.Integer())
     time_signature = db.Column(db.Integer())
 
     lyrics = db.Column(db.Text())
     polarity = db.Column(db.Float())
     subjectivity = db.Column(db.Float())
     lyric_length = db.Column(db.Integer())
+
+    num_artist_hits_at_release = db.Column(db.Integer())
 
 
 class Artist(BaseModel):
@@ -68,7 +71,8 @@ class Artist(BaseModel):
     id = db.Column(db.Integer(), primary_key=True)
     name = db.Column(db.Text())
     artist_id = db.Column(db.Text())
-    artist_popularity = db.Column(db.Float())
-    artist_num_hits = db.Column(db.Integer())
+    followers = db.Column(db.Integer())
+    popularity = db.Column(db.Integer())
+    primary_genre = db.Column(db.Text())
 
     song = relationship("Song", back_populates="artist")
