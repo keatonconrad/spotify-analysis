@@ -19,3 +19,4 @@ songs.zip
 .yarnrc
 __pycache__/
 *.pyc
+*.db
