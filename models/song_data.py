@@ -47,6 +47,7 @@ class Song(BaseModel):
     danceability = db.Column(db.Float())
     energy = db.Column(db.Float())
     key = db.Column(db.Integer())
+    loudness = db.Column(db.Float())
     mode = db.Column(db.Integer())
     speechiness = db.Column(db.Float())
     acousticness = db.Column(db.Float())
