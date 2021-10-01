@@ -17,3 +17,5 @@ songs.zip
 .bash_history
 .cache-*
 .yarnrc
+__pycache__/
+*.pyc
