@@ -210,24 +210,27 @@ def save_track_info(track, session, hit):
     except KeyError:
         isrc = None
 
-    artist_exists = session.query(Artist.id).filter_by(spotify_id=track['artists'][0]['id']).first() is not None
+    existing_artist = session.query(Artist.id).filter_by(spotify_id=track['artists'][0]['id']).first()
         
     artist_data = {
         'name': track['artists'][0]['name'],
         'spotify_id': track['artists'][0]['id']
     }
 
-    if not artist_exists:
+    if existing_artist:
+        artist_id = existing_artist.id
+    else:
         new_artist = Artist()
         new_artist.update(artist_data)
         new_artist.save_to_db(session)
+        artist_id = new_artist.id
 
     song_exists = session.query(Song.id).filter_by(spotify_id=track['id']).first() is not None
 
     song_data = {
         'spotify_id': track['id'],
         'isrc': isrc,
-        'artist_id': new_artist.id,
+        'artist_id': artist_id,
         'title': track['name'],
         'album': track['album']['name'],
         'year': track['album']['release_date'][:4],

@@ -3,3 +3,4 @@ lyricsgenius
 spotipy
 tqdm
 textblob
+python-dotenv

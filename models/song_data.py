@@ -1,11 +1,12 @@
-import sqlalchemy as db, ForeignKey
+import sqlalchemy as db
+from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
 
-class BaseModel(Base):
+class BaseModel:
     # Provides common helper methods to models
 
     def update(self, newdata):
@@ -25,7 +26,7 @@ class BaseModel(Base):
         session.commit()
 
 
-class Song(BaseModel):
+class Song(BaseModel, Base):
     __tablename__ = 'song'
 
     id = db.Column(db.Integer(), primary_key=True)
@@ -39,7 +40,7 @@ class Song(BaseModel):
     analysis_url = db.Column(db.Text())
     track_href = db.Column(db.Text())
     type = db.Column(db.Text())
-    current_popularity = db.Column(db.Float())
+    current_popularity = db.Column(db.Integer())
     year = db.Column(db.Integer())
     explicit = db.Column(db.Boolean())
     hit = db.Column(db.Boolean())
@@ -66,7 +67,7 @@ class Song(BaseModel):
     num_artist_hits_at_release = db.Column(db.Integer())
 
 
-class Artist(BaseModel):
+class Artist(BaseModel, Base):
     __tablename__ = 'artist'
 
     id = db.Column(db.Integer(), primary_key=True)
@@ -76,4 +77,4 @@ class Artist(BaseModel):
     popularity = db.Column(db.Integer())
     primary_genre = db.Column(db.Text())
 
-    song = relationship("Song", back_populates="artist")
+    song = relationship("Song", backref="artist")
