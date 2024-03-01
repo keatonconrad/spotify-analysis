@@ -1,20 +1,22 @@
+import nltk
+
+nltk.download("stopwords")
+
 from datetime import datetime, timezone
 from nltk.corpus import stopwords
 import re
-import demoji
-import numpy as np
-from tensorflow.keras import backend as K
-import boto3
-import base64
 from models.song_data import Song, Artist
+import sqlalchemy
 
-stop_words = stopwords.words('english')
+stop_words = stopwords.words("english")
 
 epoch = datetime.utcfromtimestamp(0)
 
 
 def now():
-    return (datetime.now(timezone.utc) - datetime(1970, 1, 1, tzinfo=timezone.utc)).total_seconds()
+    return (
+        datetime.now(timezone.utc) - datetime(1970, 1, 1, tzinfo=timezone.utc)
+    ).total_seconds()
 
 
 def iso_to_date(iso_date_str):
@@ -24,9 +26,9 @@ def iso_to_date(iso_date_str):
 def iso_to_unix(date):
     # ALWAYS MAKE SURE DATE OBJECT IS IN UTC
     try:
-        utc_dt = datetime.strptime(str(date), '%Y-%m-%d %H:%M:%S')
+        utc_dt = datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S")
     except ValueError:
-        utc_dt = datetime.strptime(str(date), '%Y-%m-%d %H:%M:%S.%f')
+        utc_dt = datetime.strptime(str(date), "%Y-%m-%d %H:%M:%S.%f")
     timestamp = (utc_dt - epoch).total_seconds()
     return timestamp
 
@@ -105,116 +107,48 @@ def remove_contractions(text):
     return text
 
 
-def remove_emojis(text):
-    return demoji.replace(text)
-
-
-def get_links(text):
-    link_regex = re.compile(
-        '((((https?):((//)|(\\\\))+)|pic\.twitter\.com\/)([\w\d:#@%/;$()~_?\+-=\\\.&](#!)?)*)',
-        re.DOTALL
-    )
-    links = re.findall(link_regex, text)
-    return links
-
-
-def get_hashtags(text):
-    return re.findall('#\w+', text)
-
-
-def get_mentions(text):
-    return re.findall('@\w+', text)
-
-
-def strip_links(text):
-    links = get_links(text)
-    for link in links:
-        text = text.replace(link[0], '')
-    return text
-
-
 def strip_all_entities(text):
-    return re.sub(r'@\w+|#\w+', '', text)
+    return re.sub(r"@\w+|#\w+", "", text)
 
 
 def strip_amp(text):
-    stripped = text.replace('&amp;', 'and')
+    stripped = text.replace("&amp;", "and")
     # Depending on if spaces have been put around certain punctuation
-    stripped = stripped.replace('&amp ;', 'and')
+    stripped = stripped.replace("&amp ;", "and")
     return stripped
 
 
 def remove_sc_and_numbers(text):
-    return re.sub(r'[^\w\s]|\d', '', text)
+    return re.sub(r"[^\w\s]|\d", "", text)
 
 
 def clean_text(text):
-    return strip_all_entities(remove_contractions(strip_links(remove_emojis(strip_amp(text)))))
+    return strip_all_entities(remove_contractions(strip_amp(text)))
 
 
 def strip_stop_words(text):
     if text is None:
         return None
     precleaned_word_arr = text.split()
-    cleaned_word_arr = [word.lower()
-                        for word in precleaned_word_arr if word.lower() not in stop_words]
-    return ' '.join(cleaned_word_arr)
-
-
-def ioa(o, s):
-    """
-    Uses MAE instead of MSE
-    input:
-        o: observed
-        s: simulated
-    """
-    try:
-        ia = 1 - (K.sum(K.abs(o-s)))/(K.sum(K.abs(s-K.mean(o))+K.abs(o-K.mean(o))))
-    except:
-        ia = 1 - (np.sum(np.abs(o-s)))/(np.sum(np.abs(s-np.mean(o))+np.abs(o-np.mean(o))))
-    return ia
-
-
-def cd(y_true, y_pred):
-    SS_res = np.sum(np.square(y_true - y_pred))
-    SS_tot = np.sum(np.square(y_true - np.mean(y_true)))
-    return (1 - SS_res/(SS_tot + K.epsilon()))
-
-
-def adj_r2(y_true, y_pred, n, p):
-    return 1-(1-cd(y_true, y_pred))*(n-1)/(n-p-1)
-
-
-def get_aws_secret(secret_name, region_name):
-    session = boto3.session.Session()
-    client = session.client(
-        service_name='secretsmanager',
-        region_name=region_name
-    )
-
-    get_secret_value_response = client.get_secret_value(
-        SecretId=secret_name
-    )
-
-    if 'SecretString' in get_secret_value_response:
-        secret = get_secret_value_response['SecretString']
-    else:
-        secret = base64.b64decode(get_secret_value_response['SecretBinary'])
-
-    return secret
+    cleaned_word_arr = [
+        word.lower() for word in precleaned_word_arr if word.lower() not in stop_words
+    ]
+    return " ".join(cleaned_word_arr)
 
 
 def save_track_info(track, session, hit):
     try:
-        isrc = track['external_ids']['isrc']
+        isrc = track["external_ids"]["isrc"]
     except KeyError:
         isrc = None
 
-    existing_artist = session.query(Artist.id).filter_by(spotify_id=track['artists'][0]['id']).first()
-        
+    existing_artist = (
+        session.query(Artist.id).filter_by(spotify_id=track["artists"][0]["id"]).first()
+    )
+
     artist_data = {
-        'name': track['artists'][0]['name'],
-        'spotify_id': track['artists'][0]['id']
+        "name": track["artists"][0]["name"],
+        "spotify_id": track["artists"][0]["id"],
     }
 
     if existing_artist:
@@ -225,27 +159,21 @@ def save_track_info(track, session, hit):
         new_artist.save_to_db(session)
         artist_id = new_artist.id
 
-    song_exists = session.query(Song.id).filter_by(spotify_id=track['id']).first() is not None
-
-    if 'non_hit_df_index' in track:
-        non_hit_df_index = track['non_hit_df_index']
-    else:
-        non_hit_df_index = None
-
-    song_data = {
-        'spotify_id': track['id'],
-        'isrc': isrc,
-        'artist_id': artist_id,
-        'title': track['name'],
-        'album': track['album']['name'],
-        'year': track['album']['release_date'][:4],
-        'explicit': track['explicit'],
-        'hit': hit,
-        'current_popularity': track['popularity'],
-        'non_hit_df_index': non_hit_df_index
-    }
+    song_exists = session.query(
+        sqlalchemy.exists().where(Song.spotify_id == track["id"])
+    ).scalar()
 
     if not song_exists:
-        new_song = Song()
-        new_song.update(song_data)
+        new_song = Song(
+            spotify_id=track["id"],
+            isrc=isrc,
+            artist_id=artist_id,
+            title=track["name"],
+            album=track["album"]["name"],
+            year=track["album"]["release_date"][:4],
+            explicit=track["explicit"],
+            hit=hit,
+            current_popularity=track["popularity"],
+            non_hit_df_index=track.get("non_hit_df_index"),
+        )
         new_song.save_to_db(session)

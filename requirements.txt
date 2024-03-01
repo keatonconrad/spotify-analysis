@@ -6,6 +6,4 @@ textblob
 python-dotenv
 pandas
 tensorflow
-boto3
-demoji
 psycopg2
